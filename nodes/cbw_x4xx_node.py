@@ -1,10 +1,23 @@
 #!/usr/bin/env python
 
 """
+Poll the status of a Control By Web X4xx series frame and publish the information as 
+Robot Operating System (ROS) topics.  Currently, we publish one topic for information
+common to the frame and then one per relay/current sensor module.
 
-XXXXXXXXXXXX
+Currently this software requires specific configuration on the X4xx to work.  The X4xx
+offers the ability to name the relays and current sensors.  For this software to properly
+understand the configuration the following conventions must be applied
 
-The X4xx responds to the customState.xml request with something like this:
+- no special characters in the name (I.E. no '()%$^'
+- the names for relays MUST END IN 'Relay' CASE SENSITITVE
+- the names for current sensors MUST END in 'Amps' CASE SENSITIVE
+
+To get the status we poll the X4xx:
+
+http://<ip address>/customState.xml
+
+The X4xx responds with something like this:
 
 <datavalues>
     <vin>22.7</vin>
@@ -31,6 +44,8 @@ The X4xx responds to the customState.xml request with something like this:
     <timezoneOffset>0</timezoneOffset>
     <serialNumber>00:0C:C8:04:41:8C</serialNumber>
 </datavalues>
+
+This application parses the response and forwards it to ROS.
 
 """
 
@@ -101,7 +116,7 @@ def grab_X4xx_status():
                 # all other values
                 other[element.tag] = element.text
                 
-        return relays, current_sensors, common
+        return relays, current_sensors, other
     
     else:
         rospy.logwarn_throttle(60.0, "unable to poll status of Control By Web X4xx at '%s'" % x4xx_url)
@@ -174,9 +189,9 @@ def publish_common_values(publisher, values):
     # only increment the sequence number here to reflect the fact that frame and module information came from
     # the same status poll
     sequence_number = sequence_number + 1
-    status.seq      = sequence_number
-    status.frame_id = "ROS control_by_web_x4xx"
-    status.stamp    = rospy.Time.now()
+    status.header.seq      = sequence_number
+    status.header.frame_id = "ROS control_by_web_x4xx"
+    status.header.stamp    = rospy.Time.now()
     
     # frame values
     if 'vin' in values:
@@ -233,9 +248,9 @@ def publish_module_values(all_modules):
         
         # at this point we have a publisher so prepare the message
         module_status              = X4xx_relay_current_status()
-        module_status.seq          = sequence_number
-        module_status.frame_id     = "ROS control_by_web_x4xx"
-        module_status.stamp        = rospy.Time.now()
+        module_status.header.seq          = sequence_number
+        module_status.header.frame_id     = "ROS control_by_web_x4xx"
+        module_status.header.stamp        = rospy.Time.now()
         
         module_status.name         = module        
         module_status.relay_status = all_modules[module]['relay_status']
@@ -245,6 +260,12 @@ def publish_module_values(all_modules):
         
 
 def cbw_x4xx_node():
+    """
+    This is the main function for the ROS node behavior.
+    
+    We setup our publishers then enter a loop that polls the status which is rate limited
+    via a rospy.Rate object.
+    """
     rospy.loginfo("initializing control_by_web_x4xx_interface node")
     rospy.init_node('control_by_web_x4xx_interface', anonymous=True)
     
@@ -272,7 +293,7 @@ def cbw_x4xx_node():
             publish_module_values(all_modules)
 
         # sleep to control the polling rate
-        rate.sleep()
+        status_rate.sleep()
         
     
 if __name__ == '__main__':

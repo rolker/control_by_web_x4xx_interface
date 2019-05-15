@@ -3,7 +3,7 @@
 
 Header  header
 
-float32 voltage_inputWAT
+float32 voltage_input
 string  serial_number
 uint8   timezone_offset
 float32 temperature      # units are configured in device setup   
