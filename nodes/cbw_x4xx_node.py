@@ -45,8 +45,33 @@ The X4xx responds with something like this:
     <serialNumber>00:0C:C8:04:41:8C</serialNumber>
 </datavalues>
 
-This application parses the response and forwards it to ROS.
 
+This application parses the response and forwards it to ROS like so:
+
+/control_by_web_status
+/control_by_web_status/aftSecondaryBilgeRelay
+/control_by_web_status/em2040
+/control_by_web_status/jet1Amps
+/control_by_web_status/jet212voltRelay
+/control_by_web_status/jet2Amps
+/control_by_web_status/jet2PwrButtonRelay
+/control_by_web_status/mbrRelay
+/control_by_web_status/mystique
+/control_by_web_status/posmv
+/control_by_web_status/storm
+/control_by_web_status/uhfEstopOverrideRelay
+/control_by_web_status/vlp16Relay
+
+
+With a 5Hz update rate this node appears to consume approximately 390.07B/s
+
+You can set the poll rate below (hard coded constant max_poll_rate_hz) which
+appears to work as expected.
+
+
+Instructions to run locally:
+roscore in one tab
+rosrun control_by_web_x4xx_interface cbw_x4xx_node.py
 """
 
 import rospy                        # ROS python features
@@ -77,6 +102,9 @@ module_publishers = dict()
 # the maximum rate we should poll the X4xx for status
 # NOTE: currently a command will issue its own poll so the overall poll rate can exceed this value
 max_poll_rate_hz = 5
+
+# the queque size for ROS publisher objects, select 1 because we only care about the latest message
+publisher_queue_size = 1
 
 
 def grab_X4xx_status():
@@ -242,7 +270,7 @@ def publish_module_values(all_modules):
         # first we have to determine if we have a publisher for this module yet
         if module not in module_publishers:
             module_topic = topic_root + '/' + module
-            module_publishers[module] = rospy.Publisher(module_topic, X4xx_relay_current_status, queue_size=10)
+            module_publishers[module] = rospy.Publisher(module_topic, X4xx_relay_current_status, queue_size=publisher_queue_size)
             rospy.loginfo("publishing '%s' module status on topic: %s" % (module, module_topic))
         assert module in module_publishers
         
@@ -270,7 +298,7 @@ def cbw_x4xx_node():
     rospy.init_node('control_by_web_x4xx_interface', anonymous=True)
     
     # setup the common status publisher
-    common_pub = rospy.Publisher(topic_root, X4xx_status, queue_size=10)
+    common_pub = rospy.Publisher(topic_root, X4xx_status, queue_size=publisher_queue_size)
     rospy.loginfo("publishing overall status on topic: %s" % topic_root)
     
     # here we can limit the rate we poll the X4xx
