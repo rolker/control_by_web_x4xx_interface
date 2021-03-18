@@ -89,7 +89,7 @@ x4xx_url = 'http://192.168.100.212/customState.xml'
 
 # this is the topic we publish the common status, its also the 'parent' topic
 # for our module status
-topic_root = '/control_by_web_status'
+topic_root = 'control_by_web_status'
 
 # this is a monotonically increasing value incremented each time we publish
 # our common status message
