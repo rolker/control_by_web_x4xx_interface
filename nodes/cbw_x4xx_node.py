@@ -128,23 +128,27 @@ def grab_X4xx_status():
         
         # step through the (flat) parsed response
         # use the tag name to assign the correct type (bool for relays, float for current)
-        for element in root:
-            if element.tag.endswith('Relay'):
-                # relays
-                if element.text == '0':
-                    relays[element.tag] = False
-                elif element.text == '1':
-                    relays[element.tag] = True
-            
-            elif element.tag.endswith('Amps'):
-                # current sensors
-                current_sensors[element.tag] = float(element.text)
+        try:
+            for element in root:
+                if element.tag.endswith('Relay'):
+                    # relays
+                    if element.text == '0':
+                        relays[element.tag] = False
+                    elif element.text == '1':
+                        relays[element.tag] = True
                 
-            else:
-                # all other values
-                other[element.tag] = element.text
-                
-        return relays, current_sensors, other
+                elif element.tag.endswith('Amps'):
+                    # current sensors
+                    current_sensors[element.tag] = float(element.text)
+                    
+                else:
+                    # all other values
+                    other[element.tag] = element.text
+                    
+            return relays, current_sensors, other
+        except ValueError:
+            rospy.logwarn_throttle(60.0, "unable to decode data from Control By Web X4xx at '%s'" % x4xx_url)
+            return None
     
     else:
         rospy.logwarn_throttle(60.0, "unable to poll status of Control By Web X4xx at '%s'" % x4xx_url)
