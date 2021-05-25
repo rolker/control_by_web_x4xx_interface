@@ -242,14 +242,19 @@ def publish_common_values(publisher, values):
         status.timezone_offset = 99
 
     if 'payloadBoxTemp' in values:
-        status.temperature = float(values['payloadBoxTemp'])
+        status.temperature_payload_box = float(values['payloadBoxTemp'])
     else:
-        status.temperature = float('nan')
+        status.temperature_payload_box = float('nan')
 
     if 'payloadBoxHumidity' in values:
-        status.humidity = float(values['payloadBoxHumidity'])
+        status.humidity_payload_box = float(values['payloadBoxHumidity'])
     else:
-        status.humidity = float('nan')
+        status.humidity_payload_box = float('nan')
+
+    if 'cbwDistroBox' in values:
+        status.temperature_cbw_box = float(values['cbwDistroBox'])
+    else:
+        status.temperature_cbw_box = float('nan')
 
     # and finally publish!
     rospy.logdebug("publishing common status")
