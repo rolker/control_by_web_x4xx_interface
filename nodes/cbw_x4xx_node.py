@@ -241,13 +241,13 @@ def publish_common_values(publisher, values):
     else:
         status.timezone_offset = 99
 
-    if 'temperature' in values:
-        status.temperature = float(values['temperature'])
+    if 'payloadBoxTemp' in values:
+        status.temperature = float(values['payloadBoxTemp'])
     else:
         status.temperature = float('nan')
 
-    if 'humidity' in values:
-        status.humidity = float(values['humidity'])
+    if 'payloadBoxHumidity' in values:
+        status.humidity = float(values['payloadBoxHumidity'])
     else:
         status.humidity = float('nan')
 
