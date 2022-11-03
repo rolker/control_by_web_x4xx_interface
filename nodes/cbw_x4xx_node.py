@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 """
 Poll the status of a Control By Web X4xx series frame and publish the information as 
