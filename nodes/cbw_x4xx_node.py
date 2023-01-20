@@ -78,6 +78,10 @@ import rospy                        # ROS python features
 import requests                     # for handling http requests
 import xml.etree.ElementTree as ET  # for parsing XML response
 import math                         # for checking for NaNs                       
+from diagnostic_msgs.msg import DiagnosticArray
+from diagnostic_msgs.msg import DiagnosticStatus
+from diagnostic_msgs.msg import KeyValue
+
 
 # ROS messages
 from control_by_web_x4xx_interface.msg import X4xx_status
@@ -209,7 +213,7 @@ def send_X4xx_cmd(msg):
     rospy.loginfo("received cbw_x4xx_cmd: %s", msg)
     
 
-def publish_common_values(publisher, values):
+def publish_common_values(publisher, diag_pub, values):
     """
     Here we publish the common values
     """
@@ -224,35 +228,48 @@ def publish_common_values(publisher, values):
     status.header.seq      = sequence_number
     status.header.frame_id = "ROS control_by_web_x4xx"
     status.header.stamp    = rospy.Time.now()
-    
+
+    # establish diag msg
+    ds = DiagnosticStatus()
+    ds.hardware_id = 'ben'
+    diag_array = DiagnosticArray()
+    diag_array.header.stamp = rospy.Time.now()
+    ds.name = 'ben'
+
     # frame values
     if 'vin' in values:
         status.voltage_input = float(values['vin'])
+        ds.values.append(KeyValue('vin', values['vin']))
     else:
         status.voltage_input = float('nan')
     
     if 'serialNumber' in values:
         status.serial_number = values['serialNumber']
+        ds.values.append(KeyValue('serialNumber', values['serialNumber']))
     else:
         status.serial_number = "unknown"
     
     if 'timezoneOffset' in values:
         status.timezone_offset = int(values['timezoneOffset'])
+        ds.values.append(KeyValue('timezoneOffset', values['timezoneOffset']))
     else:
         status.timezone_offset = 99
 
     if 'payloadBoxTemp' in values:
         status.temperature_payload_box = float(values['payloadBoxTemp'])
+        ds.values.append(KeyValue('payloadBoxTemp', values['payloadBoxTemp']))
     else:
         status.temperature_payload_box = float('nan')
 
     if 'payloadBoxHumidity' in values:
         status.humidity_payload_box = float(values['payloadBoxHumidity'])
+        ds.values.append(KeyValue('payloadBoxHumidity', values['payloadBoxHumidity']))
     else:
         status.humidity_payload_box = float('nan')
 
     if 'cbwDistroBox' in values:
         status.temperature_cbw_box = float(values['cbwDistroBox'])
+        ds.values.append(KeyValue('dristroboxTemp', values['cbwDistroBox']))
     else:
         status.temperature_cbw_box = float('nan')
 
@@ -260,6 +277,9 @@ def publish_common_values(publisher, values):
     rospy.logdebug("publishing common status")
     publisher.publish(status)
     
+    # publish diag
+    diag_array.status.append(ds)
+    diag_pub.publish(diag_array)
 
 def publish_module_values(all_modules):
     """ 
@@ -310,6 +330,9 @@ def cbw_x4xx_node():
     common_pub = rospy.Publisher(topic_root, X4xx_status, queue_size=publisher_queue_size)
     rospy.loginfo("publishing overall status on topic: %s" % topic_root)
     
+    #setup diagnostic publisher
+    diagnostic_pub = rospy.Publisher('/diagnostics',DiagnosticArray,queue_size=10)    
+
     # here we can limit the rate we poll the X4xx
     status_rate = rospy.Rate(max_poll_rate_hz)
     
@@ -324,7 +347,7 @@ def cbw_x4xx_node():
             all_modules = associate_relay_with_current(relays, current_sensors)
         
             # now that we have all our information organized, publish the common values
-            publish_common_values(common_pub, other)
+            publish_common_values(common_pub, diagnostic_pub, other)
                             
             # now publish the module values
             publish_module_values(all_modules)
