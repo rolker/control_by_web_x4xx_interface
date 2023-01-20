@@ -234,7 +234,7 @@ def publish_common_values(publisher, diag_pub, values):
     ds.hardware_id = 'ben'
     diag_array = DiagnosticArray()
     diag_array.header.stamp = rospy.Time.now()
-    ds.name = 'ben'
+    ds.name = 'cbw'
 
     # frame values
     if 'vin' in values:
