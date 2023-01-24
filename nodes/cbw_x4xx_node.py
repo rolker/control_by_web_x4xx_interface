@@ -231,7 +231,7 @@ def publish_common_values(publisher, diag_pub, values):
 
     # establish diag msg
     ds = DiagnosticStatus()
-    ds.hardware_id = 'ben'
+    ds.hardware_id = '00:0C:C8:04:41:8C'
     diag_array = DiagnosticArray()
     diag_array.header.stamp = rospy.Time.now()
     ds.name = 'cbw'
